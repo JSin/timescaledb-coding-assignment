@@ -1,0 +1,11 @@
+services:
+  timescaledb:
+    image: timescale/timescaledb:2.0.1-pg12
+    environment:
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./timescaledb/cpu_usage.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./timescaledb/cpu_usage.sh:/docker-entrypoint-initdb.d/2-data.sh
+      - ./timescaledb/cpu_usage.csv:/docker-entrypoint-initdb.d/cpu_usage.csv
+    ports:
+      - 127.0.0.1:5432:5432
