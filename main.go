@@ -34,8 +34,13 @@ func main() {
 	wFlag := flag.Int("w", 1, "Number of workers to initialize")
 	flag.Parse()
 
-	if len(os.Args) < 2 {
-		fmt.Println("Missing file input")
+	filename := flag.Arg(0)
+	if filename == "" {
+		fmt.Fprintln(os.Stderr, "Missing file input")
+		os.Exit(1)
+	} else if info, err := os.Stat(filename); os.IsNotExist(err) || info.IsDir() {
+		fmt.Fprintln(os.Stderr, "Invalid file")
+		os.Exit(1)
 	}
 
 	ctx := context.Background()
@@ -52,7 +57,7 @@ func main() {
 	resultCh := make(chan queries.QueryTimesResult)
 	go queries.QueryDispatcher(*wFlag, queryCh, &wg, resultCh, dbpool)
 
-	queryFile, err := os.Open(os.Args[1])
+	queryFile, err := os.Open(filename)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Provided file cannot be open:", err)
 		os.Exit(1)

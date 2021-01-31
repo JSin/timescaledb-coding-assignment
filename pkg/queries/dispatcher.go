@@ -88,13 +88,14 @@ func QueryDispatcher(numOfWorkers int, queryCh chan QueryParams, wg *sync.WaitGr
 	close(resultCh)
 }
 
-func (w worker) runQuery() {
+func (w worker) runQuery(wg *sync.WaitGroup) {
 	for t := range w.taskChan {
 		start := time.Now()
 		rows, err := w.dbpool.Query(context.Background(), query, t.queryParams.Host, t.queryParams.Start, t.queryParams.End)
 		queryTime := time.Since(start)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Could not execute query:", err)
+			wg.Done()
 			continue
 		}
 		w.queryTimeNsChan <- queryTime.Nanoseconds()
