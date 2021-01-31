@@ -23,9 +23,7 @@ type task struct {
 }
 
 type worker struct {
-	dbpool          *pgxpool.Pool
-	taskChan        chan task
-	queryTimeNsChan chan int64
+	taskChan chan task
 }
 
 type queryResult struct {
@@ -59,15 +57,16 @@ func QueryDispatcher(numOfWorkers int, queryCh chan QueryParams, wg *sync.WaitGr
 	workers := make([]worker, numOfWorkers, numOfWorkers)
 	queryTimeNsChan := make(chan int64) // upper bounds based on queryCh
 	queryTimesList := []int64{}
+
 	go addQueryTimes(queryTimeNsChan, &queryTimesList, wg)
+
 	for i := 0; i < numOfWorkers; i++ {
 		workers[i] = worker{
-			dbpool:          dbpool,
-			taskChan:        make(chan task), // upper bounds based on queryCh
-			queryTimeNsChan: queryTimeNsChan,
+			taskChan: make(chan task), // upper bounds based on queryCh
 		}
-		go workers[i].runQuery()
+		go workers[i].runQuery(queryTimeNsChan, dbpool, wg)
 	}
+
 	for queryParams := range queryCh {
 		workerPointer, ok := hostWorkerMap[queryParams.Host]
 		if !ok {
@@ -79,26 +78,29 @@ func QueryDispatcher(numOfWorkers int, queryCh chan QueryParams, wg *sync.WaitGr
 			queryParams,
 		}
 	}
+
 	close(queryTimeNsChan)
 	for _, w := range workers {
 		close(w.taskChan)
 	}
+
 	result := processQueryTimes(queryTimesList)
 	resultCh <- result
 	close(resultCh)
 }
 
-func (w worker) runQuery(wg *sync.WaitGroup) {
+func (w worker) runQuery(queryTimeNsChan chan int64, dbpool *pgxpool.Pool, wg *sync.WaitGroup) {
 	for t := range w.taskChan {
 		start := time.Now()
-		rows, err := w.dbpool.Query(context.Background(), query, t.queryParams.Host, t.queryParams.Start, t.queryParams.End)
+		rows, err := dbpool.Query(context.Background(), query, t.queryParams.Host, t.queryParams.Start, t.queryParams.End)
 		queryTime := time.Since(start)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Could not execute query:", err)
+			rows.Close()
 			wg.Done()
 			continue
 		}
-		w.queryTimeNsChan <- queryTime.Nanoseconds()
+		queryTimeNsChan <- queryTime.Nanoseconds()
 		// No need for the results
 		// for rows.Next() {
 		// 	var r queryResult
