@@ -25,12 +25,27 @@ const (
 	layoutTime                = "2006-01-02 15:04:05"
 )
 
+const resultString = `
+All times below are in Milliseconds
+
+Number of Queries Processed: %d
+Total Processing Time:       %v
+The Minimum Query Time:      %v
+The Median Query Time:       %v
+The Average Query Time:      %v
+The Maximum Query TIme:      %v
+`
+
 // GetConnectionString returns the TimeScaleDB connection string
 func GetConnectionString(username, password, host, port, dbName string, maxConnections int) string {
 	return fmt.Sprintf("postgres://%v:%v@%v:%v/%v?pool_max_conns=%d", username, password, host, port, dbName, maxConnections)
 }
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s [options] filename\n", os.Args[0])
+		flag.PrintDefaults()
+	}
 	wFlag := flag.Int("w", 1, "Number of workers to initialize")
 	flag.Parse()
 
@@ -99,5 +114,5 @@ func main() {
 	wg.Wait()
 	close(queryCh)
 	result := <-resultCh
-	fmt.Println(result)
+	fmt.Printf(resultString, result.NumOfQueries, result.TotalTime, result.Min, result.Median, result.Avg, result.Max)
 }
