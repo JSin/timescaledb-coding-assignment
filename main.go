@@ -26,8 +26,6 @@ const (
 )
 
 const resultString = `
-All times below are in Milliseconds
-
 Number of Queries Processed: %d
 Total Processing Time:       %v
 The Minimum Query Time:      %v
