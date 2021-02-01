@@ -38,6 +38,7 @@ A. Feel free to change the local interface port in the `docker-compose.yml`. If 
 - This command line tool will only be working with UTF8 encoding (or compatible formats).
 - Using latest TimescaleDB version instead of assignment recommended v0.9.
 - CSV will always contain three fields in the same order.
+- CSV will always have a header field.
 - CSV line lengths will not surpass Golang's read.io limits.
 - Routing algorithm for determining which worker to run which hosts is chosen through a circular list
 - Arbitrarily chose the number of db pool max connections (10).

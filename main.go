@@ -92,6 +92,10 @@ func main() {
 			isHeader = false
 			continue
 		}
+		if len(line) < 3 {
+			fmt.Fprintln(os.Stderr, "CSV format is invalid")
+			continue
+		}
 		start, err := time.Parse(layoutTime, line[1])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Could not parse start time:", err)
